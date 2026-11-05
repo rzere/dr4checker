@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { Favicon } from "@/components/Favicon";
 
 type ResultRow = {
   domain: string;
@@ -24,11 +25,120 @@ function formatScore(n: number | null): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-function changeClass(change: number | null): string {
-  if (change === null) return "text-zinc-500";
-  if (change > 0) return "text-emerald-600";
-  if (change < 0) return "text-rose-600";
-  return "text-zinc-600";
+function changeTone(change: number | null): {
+  text: string;
+  bg: string;
+} {
+  if (change === null) return { text: "text-zinc-600", bg: "bg-zinc-100" };
+  if (change > 0) return { text: "text-emerald-700", bg: "bg-emerald-50" };
+  if (change < 0) return { text: "text-rose-700", bg: "bg-rose-50" };
+  return { text: "text-zinc-600", bg: "bg-zinc-100" };
+}
+
+function ChangePill({
+  change,
+  changeLabel,
+  size = "md",
+}: {
+  change: number | null;
+  changeLabel: string | null;
+  size?: "sm" | "md" | "lg";
+}) {
+  const tone = changeTone(change);
+  const label =
+    change === null
+      ? "n/a"
+      : change === 0
+        ? "No change"
+        : (changeLabel ?? formatScore(change));
+  const sizeClass =
+    size === "lg"
+      ? "min-w-[4.5rem] px-3 py-1.5 text-sm"
+      : size === "sm"
+        ? "min-w-[3rem] px-2 py-0.5 text-xs"
+        : "min-w-[3.5rem] px-2.5 py-1 text-sm";
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-lg font-semibold tabular-nums ${tone.text} ${tone.bg} ${sizeClass}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ScoreBlock({
+  value,
+  label,
+  emphasize = false,
+  large = true,
+}: {
+  value: number | null;
+  label: string;
+  emphasize?: boolean;
+  large?: boolean;
+}) {
+  return (
+    <div
+      className={`flex flex-1 flex-col items-center justify-center rounded-2xl bg-zinc-100/90 px-3 py-5 shadow-sm ring-1 ring-zinc-900/5 sm:px-4 sm:py-6 ${
+        emphasize ? "bg-white" : ""
+      }`}
+    >
+      <div
+        className={`font-semibold tabular-nums tracking-tight text-zinc-900 ${
+          large
+            ? "text-5xl sm:text-6xl leading-none"
+            : "text-3xl sm:text-4xl leading-none"
+        }`}
+      >
+        {formatScore(value)}
+      </div>
+      <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function DomainHeader({ domain, size = 22 }: { domain: string; size?: number }) {
+  return (
+    <div className="inline-flex max-w-full items-center gap-2.5">
+      <Favicon domain={domain} size={size} />
+      <span className="truncate text-sm font-semibold text-zinc-900 sm:text-base">
+        {domain}
+      </span>
+    </div>
+  );
+}
+
+function SingleResult({ row }: { row: ResultRow }) {
+  return (
+    <article className="rounded-2xl bg-zinc-50 px-4 py-6 text-center shadow-sm ring-1 ring-zinc-200 sm:px-7 sm:py-8">
+      <DomainHeader domain={row.domain} size={24} />
+      <div className="mt-6 flex items-center justify-center gap-3 sm:gap-4">
+        <ScoreBlock value={row.dr3} label="DR now" />
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <ChangePill change={row.change} changeLabel={row.changeLabel} size="lg" />
+        </div>
+        <ScoreBlock value={row.dr4} label="DR4" emphasize />
+      </div>
+    </article>
+  );
+}
+
+function MultiResultCard({ row }: { row: ResultRow }) {
+  return (
+    <article className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+      <DomainHeader domain={row.domain} size={20} />
+      <div className="mt-4 flex items-center gap-2.5 sm:gap-3">
+        <ScoreBlock value={row.dr3} label="DR now" large={false} />
+        <div className="flex shrink-0 flex-col items-center">
+          <ChangePill change={row.change} changeLabel={row.changeLabel} size="sm" />
+        </div>
+        <ScoreBlock value={row.dr4} label="DR4" emphasize large={false} />
+      </div>
+    </article>
+  );
 }
 
 export function Checker({ initialDomain = "" }: { initialDomain?: string }) {
@@ -110,47 +220,16 @@ export function Checker({ initialDomain = "" }: { initialDomain?: string }) {
       ) : null}
 
       {data ? (
-        <div className="mt-8 space-y-4">
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Domain
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      DR now
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      DR4
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Change
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.results.map((row) => (
-                    <tr key={row.domain} className="border-t border-zinc-100">
-                      <th scope="row" className="px-4 py-4 font-semibold text-zinc-900">
-                        {row.domain}
-                      </th>
-                      <td className="px-4 py-4 tabular-nums text-zinc-700">
-                        {formatScore(row.dr3)}
-                      </td>
-                      <td className="px-4 py-4 tabular-nums text-lg font-semibold text-zinc-900">
-                        {formatScore(row.dr4)}
-                      </td>
-                      <td className={`px-4 py-4 tabular-nums font-medium ${changeClass(row.change)}`}>
-                        {row.changeLabel ?? "n/a"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="mt-8 space-y-4" aria-live="polite">
+          {data.results.length === 1 ? (
+            <SingleResult row={data.results[0]} />
+          ) : (
+            <div className="space-y-3">
+              {data.results.map((row) => (
+                <MultiResultCard key={row.domain} row={row} />
+              ))}
             </div>
-          </div>
+          )}
 
           <p className="text-sm text-zinc-500">
             <a
