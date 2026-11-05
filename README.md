@@ -17,7 +17,7 @@ Copy `.env.example` to `.env.local` and set:
 AHREFS_API_KEY=your_free_ahrefs_apiv3_key
 ```
 
-Get a free key: create a free Ahrefs account, then Account settings -> API keys.
+Get a free key: create a free Ahrefs account, then Account settings, then API keys.
 
 Optional for local demos without a key:
 
